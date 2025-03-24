@@ -17,6 +17,7 @@ public class Theater {
     private Long id;
 
     @NotBlank(message = "Name is required")
+    @Column(unique = true)
     private String name;
 
     @Positive(message = "Capacity must be positive")

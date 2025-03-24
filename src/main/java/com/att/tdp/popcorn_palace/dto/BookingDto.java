@@ -26,6 +26,5 @@ public class BookingDto {
     @Positive(message = "Seat number must be at least 1")
     private Integer numberOfSeats;
 
-    @NotNull(message = "Booking time is required")
     private LocalDateTime bookingTime;
 }

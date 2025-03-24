@@ -3,10 +3,12 @@ package com.att.tdp.popcorn_palace.service.impl;
 import com.att.tdp.popcorn_palace.dto.BookingDto;
 import com.att.tdp.popcorn_palace.entity.Booking;
 import com.att.tdp.popcorn_palace.entity.Showtime;
+import com.att.tdp.popcorn_palace.entity.Theater;
 import com.att.tdp.popcorn_palace.exception.SeatNotAvailableException;
 import com.att.tdp.popcorn_palace.exception.ResourceNotFoundException;
 import com.att.tdp.popcorn_palace.repository.BookingRepository;
 import com.att.tdp.popcorn_palace.repository.ShowtimeRepository;
+import com.att.tdp.popcorn_palace.repository.TheaterRepository;
 import com.att.tdp.popcorn_palace.service.BookingService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -21,12 +23,14 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final TheaterRepository theaterRepository;
     
 
     public BookingServiceImpl(BookingRepository bookingRepository,
-                             ShowtimeRepository showtimeRepository) {
+                             ShowtimeRepository showtimeRepository, TheaterRepository theaterRepository) {
         this.bookingRepository = bookingRepository;
         this.showtimeRepository = showtimeRepository;
+        this.theaterRepository = theaterRepository;
     }
 
     @Override
@@ -34,23 +38,28 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto createBooking(BookingDto bookingDto) {
         Showtime showtime = showtimeRepository.findById(bookingDto.getShowtimeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Showtime", "id", bookingDto.getShowtimeId()));
+
+        Theater theater = theaterRepository.findByName(showtime.getTheaterName())
+                .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", showtime.getTheaterName()));
+        
         
         int currentlyBookedSeats = bookingRepository.countSeatsByShowtimeId(showtime.getId());
         int requestedSeats = bookingDto.getNumberOfSeats();
         
-        if (currentlyBookedSeats + requestedSeats > showtime.getTheater().getCapacity()) {
-            int availableSeats = showtime.getTheater().getCapacity() - currentlyBookedSeats;
+        if (currentlyBookedSeats + requestedSeats > theater.getCapacity()) {
+            int availableSeats = theater.getCapacity() - currentlyBookedSeats;
             throw new SeatNotAvailableException("Not enough seats available. Requested: " + requestedSeats + ", Available: " + availableSeats);
         }
         
         Booking booking = new Booking();
         BeanUtils.copyProperties(bookingDto, booking);
-        booking.setShowtime(showtime);
+        booking.setShowtimeId(showtime.getId());
         booking.setBookingTime(LocalDateTime.now());
         Booking savedBooking = bookingRepository.save(booking);
 
         BookingDto savedBookingDto = new BookingDto();
         BeanUtils.copyProperties(savedBooking, savedBookingDto);
+        savedBookingDto.setShowtimeId(savedBooking.getShowtimeId());
         return savedBookingDto;
     }
 
@@ -61,32 +70,40 @@ public class BookingServiceImpl implements BookingService {
         Showtime showtime = showtimeRepository.findById(bookingDto.getShowtimeId())
             .orElseThrow(() -> new ResourceNotFoundException("Showtime", "id", bookingDto.getShowtimeId()));
         
+        Theater theater = theaterRepository.findByName(showtime.getTheaterName())
+            .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", showtime.getTheaterName()));
+    
+    
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", "id", id));
 
+        // check if the booking time is being updated
+        if (bookingDto.getBookingTime() != null && !bookingDto.getBookingTime().equals(booking.getBookingTime())) {
+            throw new IllegalArgumentException("Booking time cannot be updated.");
+        }
         
         // if the seat number is bigger, check if there are enough seats available
         int updatedSeats = bookingDto.getNumberOfSeats();
-        if (!booking.getShowtime().getId().equals(showtime.getId()) || booking.getNumberOfSeats() < updatedSeats) {
+        if (!booking.getShowtimeId().equals(showtime.getId()) || booking.getNumberOfSeats() < updatedSeats) {
             int currentlyBookedSeats = bookingRepository.countSeatsByShowtimeId(showtime.getId());
             int additionalSeats = updatedSeats - booking.getNumberOfSeats();
             
-            if (currentlyBookedSeats + additionalSeats > showtime.getTheater().getCapacity()) {
-                int availableSeats = showtime.getTheater().getCapacity() - currentlyBookedSeats;
+            if (currentlyBookedSeats + additionalSeats > theater.getCapacity()) {
+                int availableSeats = theater.getCapacity() - currentlyBookedSeats;
                 throw new SeatNotAvailableException("Not enough seats available. Requested: " + updatedSeats + ", Available: " + availableSeats);
             }
         }
     
-        booking.setShowtime(showtime);
+        booking.setShowtimeId(showtime.getId());
         booking.setUserId(bookingDto.getUserId());
         booking.setEmail(bookingDto.getEmail());
         booking.setNumberOfSeats(updatedSeats);
-        booking.setBookingTime(bookingDto.getBookingTime());
 
         Booking updatedBooking = bookingRepository.save(booking);
 
         BookingDto updatedBookingDto = new BookingDto();
         BeanUtils.copyProperties(updatedBooking, updatedBookingDto);
+        updatedBookingDto.setShowtimeId(updatedBooking.getShowtimeId());
         return updatedBookingDto;
     }
 
@@ -105,6 +122,7 @@ public class BookingServiceImpl implements BookingService {
 
         BookingDto bookingDto = new BookingDto();
         BeanUtils.copyProperties(booking, bookingDto);
+        bookingDto.setShowtimeId(booking.getShowtimeId());
         return bookingDto;
     }
 
@@ -114,6 +132,7 @@ public class BookingServiceImpl implements BookingService {
                 .map(booking -> {
                     BookingDto bookingDto = new BookingDto();
                     BeanUtils.copyProperties(booking, bookingDto);
+                    bookingDto.setShowtimeId(booking.getShowtimeId());
                     return bookingDto;
                 })
                 .collect(Collectors.toList());
@@ -126,6 +145,7 @@ public class BookingServiceImpl implements BookingService {
                 .map(booking -> {
                     BookingDto bookingDto = new BookingDto();
                     BeanUtils.copyProperties(booking, bookingDto);
+                    bookingDto.setShowtimeId(booking.getShowtimeId());
                     return bookingDto;
                 })
                 .collect(Collectors.toList());
@@ -136,10 +156,11 @@ public class BookingServiceImpl implements BookingService {
         Showtime showtime = showtimeRepository.findById(showtimeId)
             .orElseThrow(() -> new ResourceNotFoundException("Showtime", "id", showtimeId));
         
-        return bookingRepository.findByShowtime(showtime).stream()
+        return bookingRepository.findByShowtimeId(showtimeId).stream()
                 .map(booking -> {
                     BookingDto bookingDto = new BookingDto();
                     BeanUtils.copyProperties(booking, bookingDto);
+                    bookingDto.setShowtimeId(booking.getShowtimeId());
                     return bookingDto;
                 })
                 .collect(Collectors.toList());

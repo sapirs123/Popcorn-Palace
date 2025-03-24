@@ -28,6 +28,10 @@ public class TheaterServiceImpl implements TheaterService {
     @Override
     @Transactional
     public TheaterDto createTheater(TheaterDto theaterDto) {
+        if (theaterRepository.findByName(theaterDto.getName()).isPresent()) {
+            throw new IllegalArgumentException("Theater with the name '" + theaterDto.getName() + "' already exists");
+        }
+        
         Theater theater = new Theater();
         BeanUtils.copyProperties(theaterDto, theater);
         
@@ -39,9 +43,9 @@ public class TheaterServiceImpl implements TheaterService {
     }
     
     @Override
-    public TheaterDto getTheaterById(Long id) {
-        Theater theater = theaterRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", id));
+    public TheaterDto getTheaterByName(String theaterName) {
+        Theater theater = theaterRepository.findByName(theaterName)
+                .orElseThrow(() -> new ResourceNotFoundException("Theater", "name", theaterName));
         
         TheaterDto theaterDto = new TheaterDto();
         BeanUtils.copyProperties(theater, theaterDto);
@@ -61,10 +65,20 @@ public class TheaterServiceImpl implements TheaterService {
     
     @Override
     @Transactional
-    public TheaterDto updateTheater(Long id, TheaterDto theaterDto) {
-        Theater theater = theaterRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", id));
+    public TheaterDto updateTheater(String theaterName, TheaterDto theaterDto) {
+        Theater theater = theaterRepository.findByName(theaterName)
+                .orElseThrow(() -> new ResourceNotFoundException("Theater", "name", theaterName));
         
+        // check if the updated name already exists for another theater
+        if (theaterDto.getName() != null && !theaterDto.getName().equals(theater.getName())) {
+            theaterRepository.findByName(theaterDto.getName())
+                .ifPresent(existingTheater -> {
+                    if (!existingTheater.getName().equals(theaterName)) {
+                        throw new IllegalArgumentException("Theater with the name '" + theaterDto.getName() + "' already exists");
+                    }
+                });
+        }
+
         theater.setName(theaterDto.getName());
         theater.setLocation(theaterDto.getLocation());
         theater.setCapacity(theaterDto.getCapacity());
@@ -78,12 +92,12 @@ public class TheaterServiceImpl implements TheaterService {
     
     @Override
     @Transactional
-    public void deleteTheater(Long id) {
-        Theater theater = theaterRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", id));
+    public void deleteTheater(String theaterName) {
+        Theater theater = theaterRepository.findByName(theaterName)
+                .orElseThrow(() -> new ResourceNotFoundException("Theater", "name", theaterName));
         
         // Only delete if there are no scheduled showtimes for this theater
-        if (showtimeRepository.existsByTheaterId(id)) {
+        if (showtimeRepository.existsByTheaterName(theaterName)) {
             throw new IllegalStateException("Cannot delete theater with scheduled showtimes");
         }
         

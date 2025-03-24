@@ -18,6 +18,7 @@ public class Movie {
     private Long id;
 
     @NotBlank(message = "Title is required")
+    @Column(unique = true)
     private String title;
     
     @NotBlank(message = "Genre is required")

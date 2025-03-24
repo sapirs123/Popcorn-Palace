@@ -1,5 +1,6 @@
 package com.att.tdp.popcorn_palace.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -18,7 +19,7 @@ public class ShowtimeDto {
     private Long movieId;
 
     @NotNull(message = "Theater ID is required")
-    private Long theaterId;
+    private String theaterName;
 
     @NotNull(message = "Start time is required")
     private LocalDateTime startTime;
@@ -27,8 +28,5 @@ public class ShowtimeDto {
     private LocalDateTime endTime;
 
     @Positive(message = "Price must be positive")
-    private Double price;
-    
-    private String movieTitle;
-    private String theaterName;
+    private Double price;    
 }

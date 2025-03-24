@@ -18,10 +18,8 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "showtime_id", nullable = false)
-    @NotNull(message = "Showtime is required")
-    private Showtime showtime;
+    @NotNull(message = "Showtime ID is required")
+    private Long showtimeId;
 
     @NotNull(message = "User ID is required")
     private Long userId; 
@@ -33,6 +31,5 @@ public class Booking {
     @Positive(message = "Seat number must be at least 1")
     private Integer numberOfSeats;
 
-    @NotNull(message = "Booking time is required")
     private LocalDateTime bookingTime;
 }

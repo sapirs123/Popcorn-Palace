@@ -40,6 +40,12 @@ public class MovieController {
         return ResponseEntity.ok(movieService.getAllMovies());
     }
     
+    @PostMapping("/title/{movieTitle}")
+    public ResponseEntity<MovieDto> updateMovieByTitle(@PathVariable String movieTitle, 
+                                                     @Valid @RequestBody MovieDto movieDto) {
+        return ResponseEntity.ok(movieService.updateMovieByName(movieTitle, movieDto));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<MovieDto> updateMovie(@PathVariable Long id, 
                                                @Valid @RequestBody MovieDto movieDto) {
@@ -49,6 +55,11 @@ public class MovieController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMovie(@PathVariable Long id) {
         movieService.deleteMovie(id);
+        return ResponseEntity.noContent().build();
+    }
+    @DeleteMapping("/title/{title}")
+    public ResponseEntity<Void> deleteMovie(@PathVariable String title) {
+        movieService.deleteMovieByTitle(title);
         return ResponseEntity.noContent().build();
     }
 }

@@ -11,6 +11,6 @@ public interface ShowtimeService {
     ShowtimeDto getShowtimeById(Long id);
     List<ShowtimeDto> getAllShowtimes();
     List<ShowtimeDto> getShowtimesByMovieId(Long movieId);
-    List<ShowtimeDto> getShowtimesByTheaterId(Long theaterId);
+    public List<ShowtimeDto> getShowtimesByTheaterName(String theaterName);
     
 }

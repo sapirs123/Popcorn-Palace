@@ -1,5 +1,6 @@
 package com.att.tdp.popcorn_palace.dto;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;

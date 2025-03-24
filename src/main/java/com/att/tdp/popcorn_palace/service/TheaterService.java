@@ -5,9 +5,9 @@ import java.util.List;
 
 public interface TheaterService {
     TheaterDto createTheater(TheaterDto theaterDto);
-    TheaterDto updateTheater(Long id, TheaterDto theaterDto);
-    void deleteTheater(Long id);
+    TheaterDto updateTheater(String theaterName, TheaterDto theaterDto);
+    void deleteTheater(String theaterName);
 
-    TheaterDto getTheaterById(Long id);
+    TheaterDto getTheaterByName(String theaterNamed);
     List<TheaterDto> getAllTheaters();
 }

@@ -36,19 +36,24 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     @Override
     @Transactional
     public ShowtimeDto createShowtime(ShowtimeDto showtimeDto) {
-        movieRepository.findById(showtimeDto.getMovieId())
+        Movie movie = movieRepository.findById(showtimeDto.getMovieId())
                 .orElseThrow(() -> new ResourceNotFoundException("Movie", "id", showtimeDto.getMovieId()));
         
-        Theater theater = theaterRepository.findById(showtimeDto.getTheaterId())
-                .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", showtimeDto.getTheaterId()));
+        Theater theater = theaterRepository.findByName(showtimeDto.getTheaterName())
+                .orElseThrow(() -> new ResourceNotFoundException("Theater", "name", showtimeDto.getTheaterName()));
         
-        checkForOverlappingShowtimes(null, theater.getId(), 
+        checkForOverlappingShowtimes(null, theater.getName(), 
                                     showtimeDto.getStartTime(), showtimeDto.getEndTime());
         
+        if (!showtimeDto.getEndTime().isAfter(showtimeDto.getStartTime().plusMinutes(movie.getDuration()))) {
+            throw new IllegalArgumentException("End time must be after start time and long enough for the movie.");
+        }
+
         Showtime showtime = new Showtime();
         BeanUtils.copyProperties(showtimeDto, showtime);
+        showtime.setTheaterName(theater.getName());
         Showtime savedShowtime = showtimeRepository.save(showtime);
-
+    
         ShowtimeDto savedShowtimeDto = new ShowtimeDto();
         BeanUtils.copyProperties(savedShowtime, savedShowtimeDto);
         return savedShowtimeDto;
@@ -77,31 +82,29 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     
     @Override
     public List<ShowtimeDto> getShowtimesByMovieId(Long movieId) {
-        if (!movieRepository.existsById(movieId)) {
-            throw new ResourceNotFoundException("Movie", "id", movieId);
-        }
+        movieRepository.findById(movieId)
+                .orElseThrow(() -> new ResourceNotFoundException("Movie", "id", movieId));
         
         return showtimeRepository.findByMovieId(movieId).stream()
                 .map(showtime -> {
                     ShowtimeDto showtimeDto = new ShowtimeDto();
                     BeanUtils.copyProperties(showtime, showtimeDto);
-                    showtimeDto.setMovieTitle(showtime.getMovie().getTitle());
                     return showtimeDto;
                 })
                 .collect(Collectors.toList());
     }
-    
+
     @Override
-    public List<ShowtimeDto> getShowtimesByTheaterId(Long theaterId) {
-        if (!theaterRepository.existsById(theaterId)) {
-            throw new ResourceNotFoundException("Theater", "id", theaterId);
+    public List<ShowtimeDto> getShowtimesByTheaterName(String theaterName) {
+        if (!theaterRepository.existsByName(theaterName)) {
+            throw new ResourceNotFoundException("Theater", "name", theaterName);
         }
-        
-        return showtimeRepository.findByTheaterId(theaterId).stream()
+
+        return showtimeRepository.findByTheaterName(theaterName).stream()
                 .map(showtime -> {
                     ShowtimeDto showtimeDto = new ShowtimeDto();
                     BeanUtils.copyProperties(showtime, showtimeDto);
-                    showtimeDto.setTheaterName(showtime.getTheater().getName());
+                    showtimeDto.setTheaterName(showtime.getTheaterName());
                     return showtimeDto;
                 })
                 .collect(Collectors.toList());
@@ -116,14 +119,17 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         Movie movie = movieRepository.findById(showtimeDto.getMovieId())
                 .orElseThrow(() -> new ResourceNotFoundException("Movie", "id", showtimeDto.getMovieId()));
         
-        Theater theater = theaterRepository.findById(showtimeDto.getTheaterId())
-                .orElseThrow(() -> new ResourceNotFoundException("Theater", "id", showtimeDto.getTheaterId()));
+        Theater theater = theaterRepository.findByName(showtimeDto.getTheaterName())
+                .orElseThrow(() -> new ResourceNotFoundException("Theater", "name", showtimeDto.getTheaterName()));
         
-        checkForOverlappingShowtimes(id, theater.getId(), 
-                                    showtimeDto.getStartTime(), showtimeDto.getEndTime());
+        checkForOverlappingShowtimes(id, theater.getName(), showtimeDto.getStartTime(), showtimeDto.getEndTime());
         
-        showtime.setMovie(movie);
-        showtime.setTheater(theater);
+        if (!showtimeDto.getEndTime().isAfter(showtimeDto.getStartTime().plusMinutes(movie.getDuration()))) {
+            throw new IllegalArgumentException("End time must be after start time and long enough for the movie.");
+        }
+
+        showtime.setMovieId(showtimeDto.getMovieId());
+        showtime.setTheaterName(theater.getName());
         showtime.setStartTime(showtimeDto.getStartTime());
         showtime.setEndTime(showtimeDto.getEndTime());
         showtime.setPrice(showtimeDto.getPrice());
@@ -132,8 +138,7 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         
         ShowtimeDto updatedShowtimeDto = new ShowtimeDto();
         BeanUtils.copyProperties(updatedShowtime, updatedShowtimeDto);
-        updatedShowtimeDto.setMovieTitle(updatedShowtime.getMovie().getTitle());
-        updatedShowtimeDto.setTheaterName(updatedShowtime.getTheater().getName());
+        updatedShowtimeDto.setTheaterName(updatedShowtime.getTheaterName());
         return updatedShowtimeDto;
     }
     
@@ -146,10 +151,9 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         showtimeRepository.delete(showtime);
     }
     
-    private void checkForOverlappingShowtimes(Long currentShowtimeId, Long theaterId, 
+    private void checkForOverlappingShowtimes(Long currentShowtimeId, String theaterName, 
                                              LocalDateTime startTime, LocalDateTime endTime) {
-        Theater theater = theaterRepository.findById(theaterId).orElseThrow(() -> new ResourceNotFoundException("Theater", "id", theaterId));
-        List<Showtime> overlappingShowtimes = showtimeRepository.findOverlappingShowtimes(theater, startTime, endTime);
+        List<Showtime> overlappingShowtimes = showtimeRepository.findOverlappingShowtimes(theaterName, startTime, endTime);
 
         // If updating an existing showtime, exclude it from the overlap check
         if (currentShowtimeId != null) {

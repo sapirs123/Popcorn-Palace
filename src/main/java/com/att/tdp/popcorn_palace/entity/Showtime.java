@@ -18,15 +18,13 @@ public class Showtime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id", nullable = false)
     @NotNull(message = "Movie is required")
-    private Movie movie;
+    private Long movieId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "theater_id", nullable = false)
-    @NotNull(message = "Theater is required")
-    private Theater theater;
+    @NotNull(message = "Theater name is required")
+    @JoinColumn(name = "theater_name", nullable = false)
+    private String theaterName;
 
     @NotNull(message = "Start time is required")
     private LocalDateTime startTime;
@@ -36,10 +34,4 @@ public class Showtime {
 
     @Positive(message = "Price must be positive")
     private Double price;
-
-    @AssertTrue(message = "End time must be after start time and long enough for the movie.")
-    private boolean isEndTimeValid() {
-        return endTime.isAfter(startTime.plusMinutes(movie.getDuration()));
-    }
-
 }

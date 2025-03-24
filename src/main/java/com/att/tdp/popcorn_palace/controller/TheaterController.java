@@ -24,9 +24,9 @@ public class TheaterController {
         return new ResponseEntity<>(theaterService.createTheater(theaterDto), HttpStatus.CREATED);
     }
     
-    @GetMapping("/{id}")
-    public ResponseEntity<TheaterDto> getTheaterById(@PathVariable Long id) {
-        return ResponseEntity.ok(theaterService.getTheaterById(id));
+    @GetMapping("/{name}")
+    public ResponseEntity<TheaterDto> getTheaterById(@PathVariable String name) {
+        return ResponseEntity.ok(theaterService.getTheaterByName(name));
     }
     
     @GetMapping
@@ -34,15 +34,15 @@ public class TheaterController {
         return ResponseEntity.ok(theaterService.getAllTheaters());
     }
     
-    @PutMapping("/{id}")
-    public ResponseEntity<TheaterDto> updateTheater(@PathVariable Long id, 
+    @PutMapping("/{name}")
+    public ResponseEntity<TheaterDto> updateTheater(@PathVariable String name, 
                                                    @Valid @RequestBody TheaterDto theaterDto) {
-        return ResponseEntity.ok(theaterService.updateTheater(id, theaterDto));
+        return ResponseEntity.ok(theaterService.updateTheater(name, theaterDto));
     }
     
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTheater(@PathVariable Long id) {
-        theaterService.deleteTheater(id);
+    @DeleteMapping("/{name}")
+    public ResponseEntity<Void> deleteTheater(@PathVariable String name) {
+        theaterService.deleteTheater(name);
         return ResponseEntity.noContent().build();
     }
 }

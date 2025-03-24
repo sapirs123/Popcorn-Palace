@@ -39,9 +39,9 @@ public class ShowtimeController {
         return ResponseEntity.ok(showtimeService.getShowtimesByMovieId(movieId));
     }
     
-    @GetMapping("/theater/{theaterId}")
-    public ResponseEntity<List<ShowtimeDto>> getShowtimesByTheaterId(@PathVariable Long theaterId) {
-        return ResponseEntity.ok(showtimeService.getShowtimesByTheaterId(theaterId));
+    @GetMapping("/theater/{theaterName}")
+    public ResponseEntity<List<ShowtimeDto>> getShowtimesByTheaterName(@PathVariable String theaterName) {
+        return ResponseEntity.ok(showtimeService.getShowtimesByTheaterName(theaterName));
     }
     
     @PutMapping("/{id}")
